@@ -3,6 +3,7 @@ package consul
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"net/url"
 	"os"
 	"strconv"
@@ -113,7 +114,8 @@ func (r *ConsulAdapter) buildCheck(service *bridge.Service) *consulapi.AgentServ
 	} else if cmd := service.Attrs["check_cmd"]; cmd != "" {
 		check.Args = strings.Split(fmt.Sprintf("check-cmd %s %s %s", service.Origin.ContainerID[:12], service.Origin.ExposedPort, cmd), " ")
 	} else if script := service.Attrs["check_script"]; script != "" {
-		check.Args = strings.Split(r.interpolateService(script, service), " ")
+		reg_complex_script := regexp.MustCompile(`[^\s"']+|"([^"]*)"|'([^']*)`) 
+		check.Args = reg_complex_script.FindAllString(r.interpolateService(script, service), -1)
 	} else if ttl := service.Attrs["check_ttl"]; ttl != "" {
 		check.TTL = ttl
 	} else if tcp := service.Attrs["check_tcp"]; tcp != "" {
